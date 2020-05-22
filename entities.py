@@ -152,6 +152,9 @@ class Entity(object):
 		height = np.int32(self.height)
 		pygame.draw.rect(self.window,self.color,(x,y,width,height))
 
+# numero de pasos esta al limite, matar al jugador
+# si el jugador esta muerto no debe moverse
+
 class Player(Entity):
 	"""
 	Crea a un jugador en la posición espesificada.
@@ -189,6 +192,41 @@ class Player(Entity):
 
 		self.nn = ann.neuronal_network(inputs,hidden,outputs)
 
+		self.steps = 0
+		self.max_steps = 500
+		self.fitness = 0
+		self.distance_error_amount = 0
+
+	def Fitness(self, target):
+		"""
+		Calcula la distancia entre el objetivo y este objeto y almacena
+		los resultados
+
+		Parametros
+		----------
+		target: arreglo de 2 dimensiones donde el primer elemento es x y el segundo y
+
+		Retorna
+		-----------
+		N/A
+		"""
+		error = PVector(self.position.x - target[0], self.position.y - target[1])
+		self.fitness = error.mag()
+		self.distance_error_amount += self.fitness
+	def Get_fitness(self):
+		"""
+		Retorna el porcentaje del ultimo desempeño
+
+		Parametros
+		----------
+		N/A
+
+		Retorna
+		-----------
+		np.float64
+		"""
+		return self.distance_error_amount/(self.max_steps - self.steps)
+
 	def Brain(self, pos):
 
 		x = pos[0] / self.screen_dimensions['width']
@@ -206,6 +244,11 @@ class Player(Entity):
 			self.Right_key_pressed()
 		elif(index_of_max == 3):
 			self.Left_key_pressed()
+
+		#para darle un limite de pasos y pasar a la siguiente generacion
+		#cada vez que se llama a esta funcion significa que se de un paso
+		#asi que se suma un paso al numero maximo de pasos.
+		#self.steps += 1
 
 		pass
 	def Change_size(self, new_size):
@@ -237,19 +280,23 @@ class Player(Entity):
 	def Up_key_pressed(self):
 		self.aceleration_vector.set(0,-self.acceleration_value)
 		self.acceleration.add(self.aceleration_vector)
+		self.steps += 1
 		pass
 	def Down_key_pressed(self):
 		self.aceleration_vector.set(0,self.acceleration_value)
 		self.acceleration.add(self.aceleration_vector)
+		self.steps += 1
 		pass
 	def Right_key_pressed(self):
 		self.aceleration_vector.set(self.acceleration_value,0)
 		self.acceleration.add(self.aceleration_vector)
+		self.steps += 1
 		pass
 	def Left_key_pressed(self):
 		self.aceleration_vector.set(-self.acceleration_value,0)
 		self.acceleration.add(self.aceleration_vector)
-		pass	
+		self.steps += 1
+		pass
 	def Move(self):
 		self.CheckEdge()
 		self.Update()
@@ -259,6 +306,19 @@ class Player(Entity):
 		x = self.position.x
 		y = self.position.y
 		return [x, y]
+	def Get_values(self):
+		x = self.position.x
+		y = self.position.y
+		w = self.width
+		h = self.height
+		return [x, y, w, h]
+	def Reset(self):
+		self.position.set(self.screen_dimensions['width']/2,self.screen_dimensions['height']/2)
+		self.acceleration.set(0,0)
+		self.velocity.set(0,0)
+		self.steps = 0
+		self.fitness = 0
+		self.distance_error_amount = 0
 	def Display(self):
 		surface = self.window
 		color = self.color
@@ -267,3 +327,44 @@ class Player(Entity):
 		radius = self.radius * self.scale
 		#width = self.thickness
 		pygame.draw.circle(surface, color, (x,y), radius)
+	def Live_success(self):
+		success = False
+		if(self.steps >= self.max_steps):
+			success = True
+		return success
+	def Colision(self, target_values):
+		colision = False
+
+		target_x = target_values[0]
+		target_y = target_values[1]
+		target_w = target_values[2]
+		target_h = target_values[3]
+
+		my_right_limit = self.position.x + self.radius
+		my_left_limit = self.position.x - self.radius
+		my_upper_limit = self.position.y - self.radius
+		my_bottom_limit = self.position.y + self.radius
+		your_left_limit = target_x - target_w
+		your_right_limit = target_x + target_w
+		your_upper_limit = target_y - target_h
+		your_bottom_limit = target_y + target_h
+
+		colision_y_up_to_bot = my_bottom_limit > your_upper_limit and \
+								my_bottom_limit < your_bottom_limit
+
+		colision_y_bot_to_up = my_upper_limit < your_bottom_limit and \
+								my_upper_limit > your_upper_limit 
+
+		colision_x_left_to_right = my_right_limit > your_left_limit and \
+									my_right_limit < your_right_limit 
+
+		colision_x_right_to_left = my_left_limit < your_right_limit and \
+									my_left_limit > your_left_limit 
+
+		colision_condition = (colision_x_left_to_right or colision_x_right_to_left) and \
+								(colision_y_up_to_bot or colision_y_bot_to_up)
+
+		if(colision_condition):
+			colision = True
+
+		return colision

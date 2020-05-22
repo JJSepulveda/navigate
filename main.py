@@ -26,6 +26,13 @@ def text(txt,x,y, textColor = (0, 0, 0)):
 	text = font.render(txt, True, textColor)
 	window.blit(text, (x, y))
 
+# 1. crear poblacion
+# 2. calcular aptitud
+# 3. torneo
+# 4. cruza de los mas aptos
+# 5. nueva generacion
+# 6. vuelve al paso 2 hasta acabar el numero de generaciones
+
 def main():
 	
 	player = entities.Player(WIDTH/2, HEIGHT/2, WIDTH, HEIGHT, window)
@@ -49,10 +56,21 @@ def main():
 		text("Error: ", WIDTH + 10, 90)
 		
 		#player.Brain(target.Get_cordinates())
-		player.Move()
-		player.Display()
-		target.Move()
-		target.Display()
+
+		success = player.Live_success()
+
+		finish = player.Colision(target.Get_values())
+
+		if(success or finish):
+			print("success")
+			print(player.Get_fitness())
+			target.Display()
+		else:
+			player.Move()
+			player.Display()
+			target.Move()
+			target.Display()
+
 		
 		for event in pygame.event.get():
 			if (event.type == QUIT):
@@ -61,12 +79,16 @@ def main():
 			if(event.type == KEYDOWN):
 				if(event.key == pygame.K_w):
 					player.Up_key_pressed()
+					player.Fitness(target.Get_cordinates())
 				if(event.key == pygame.K_s):
 					player.Down_key_pressed()
+					player.Fitness(target.Get_cordinates())
 				if(event.key == pygame.K_d):
 					player.Right_key_pressed()
+					player.Fitness(target.Get_cordinates())
 				if(event.key == pygame.K_a):
 					player.Left_key_pressed()
+					player.Fitness(target.Get_cordinates())
 
 		pygame.display.update()
 		time.sleep(0.025)
