@@ -20,6 +20,7 @@ window = pygame.display.set_mode((WIDTH+WIDTH_PANEL,HEIGHT))
 pygame.display.set_caption("Navigate")
 
 BACKGROUND_COLOR = (255,255,255)
+g_file_name = "backup.csv"
 
 def background():
 	window.fill((BACKGROUND_COLOR))
@@ -80,6 +81,31 @@ def generation_rewrite_brain(generation_array, new_generation):
 	for i,p in enumerate(generation_array):
 		p.Set_new_brain(new_generation[i])
 
+def neuronal_network_backup(buff):
+	file_name = g_file_name
+	values = []
+	fitness = []
+	dataframe = {'cromosomas': [], 'fitness': []}
+	#convierto el arreglo cromosomas porque cuando se guarda en csv
+	#se pierde el tipo de datos array, asi que es mejor guardarla
+	#como una string y cuando se recuperen los datos se reconvierten a array.
+	for i in buff:
+		string = np.array2string(i['cromosomas'], precision=6, separator=' ', suppress_small=True)
+		values.append(string[1:-1])
+		fitness.append(i['fit'])
+
+	dataframe['cromosomas'] = values
+	dataframe['fitness'] = fitness
+	
+	dataframe = pd.DataFrame(dataframe)
+	print(dataframe)
+	dataframe.to_csv(file_name)
+
+def convert_string_to_array(pixels):
+	if type(pixels) == str:
+		pixels = np.array([np.float64(i) for i in pixels.split()])	
+	return pixels
+
 
 # 1. crear poblacion
 # 2. calcular aptitud
@@ -106,6 +132,13 @@ def main():
 	GAME_MODE = MACHINE_LEARNING_MODE
 
 	ag = AG.AG(MAX_POPULATION)
+
+	backup_nn = pd.read_csv(g_file_name)
+	best_nn = convert_string_to_array(backup_nn['cromosomas'][0])
+	print(best_nn)
+
+	player.Set_new_brain(best_nn)
+
 
 	while(True):
 
@@ -137,6 +170,7 @@ def main():
 				generation_rewrite_brain(players_array, new_generation_array)
 				generation_reset(players_array)
 				generation_finish_flag = False
+				target.position.set(np.random.randint(WIDTH), np.random.randint(HEIGHT))
 				pass
 
 
@@ -149,6 +183,7 @@ def main():
 			if(success or finish):
 				print(player.Get_fitness())
 				player.Reset()
+				target.position.set(np.random.randint(WIDTH), np.random.randint(HEIGHT))
 			else:
 				player.Brain(target.Get_values())
 				player.Move()
@@ -171,6 +206,8 @@ def main():
 				if(event.key == pygame.K_a):
 					player.Left_key_pressed()
 					player.Fitness(target.Get_cordinates())
+				if(event.key == pygame.K_g):
+					neuronal_network_backup(sorted_array[0:10])
 
 		pygame.display.update()
 		time.sleep(0.025)
