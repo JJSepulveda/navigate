@@ -180,7 +180,7 @@ class AG(object):
 		#con respecto al fitness
 		for _ in range(self.population):
 			participants_id = np.random.randint(0, self.population - 1, (self.participants))
-			winners.append(np.max(participants_id))
+			winners.append(np.min(participants_id))
 
 		winners = winners
 		self.winners = winners

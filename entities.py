@@ -193,9 +193,11 @@ class Player(Entity):
 		self.nn = ann.neuronal_network(inputs,hidden,outputs)
 
 		self.steps = 0
-		self.max_steps = 500
+		self.max_steps = 50
 		self.fitness = 0
 		self.distance_error_amount = 0
+
+		self.Change_color((0,np.random.randint(255),np.random.randint(255)))
 
 	def Fitness(self, target):
 		"""
@@ -225,12 +227,12 @@ class Player(Entity):
 		-----------
 		np.float64
 		"""
-		return self.distance_error_amount/(self.max_steps - self.steps)
+		return self.distance_error_amount/self.steps
 
 	def Brain(self, pos):
 
-		x = pos[0] / self.screen_dimensions['width']
-		y = pos[1] / self.screen_dimensions['height']		
+		x = (pos[0] - self.position.x) / self.screen_dimensions['width']
+		y = (pos[1] - self.position.y) / self.screen_dimensions['height']		
 
 		p = self.nn.predict([x, y])
 
@@ -244,6 +246,8 @@ class Player(Entity):
 			self.Right_key_pressed()
 		elif(index_of_max == 3):
 			self.Left_key_pressed()
+
+		self.Fitness((pos[0], pos[1]))
 
 		#para darle un limite de pasos y pasar a la siguiente generacion
 		#cada vez que se llama a esta funcion significa que se de un paso
@@ -368,3 +372,7 @@ class Player(Entity):
 			colision = True
 
 		return colision
+	def Get_brain(self):
+		return self.nn.get_weights_and_bias()
+	def Set_new_brain(self,buff):
+		self.nn.set_weights_and_bias(buff)

@@ -21,7 +21,6 @@ class neuronal_network(object):
 		return 1 / (1 + np.exp(-a))
 
 	def softmax(self, A):
-		print(A)
 		expA = np.exp(A)
 		Y = expA / expA.sum(keepdims=True)
 		return Y
@@ -79,7 +78,6 @@ class neuronal_network(object):
 		#print(self.b2.shape)
 		#print(self.b2)
 		#print(type(self.b2[0]))
-
 		return Y
 
 if(__name__ == '__main__'):
