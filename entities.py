@@ -227,6 +227,9 @@ class Player(Entity):
 		-----------
 		np.float64
 		"""
+		if(self.steps == 0):
+			#parche que pronto quitare
+			self.steps = 1
 		return self.distance_error_amount/self.steps
 
 	def Brain(self, pos):
@@ -353,17 +356,17 @@ class Player(Entity):
 		your_upper_limit = target_y - target_h
 		your_bottom_limit = target_y + target_h
 
-		colision_y_up_to_bot = my_bottom_limit > your_upper_limit and \
-								my_bottom_limit < your_bottom_limit
+		colision_y_up_to_bot = my_bottom_limit >= your_upper_limit and \
+								my_bottom_limit <= your_bottom_limit
 
-		colision_y_bot_to_up = my_upper_limit < your_bottom_limit and \
-								my_upper_limit > your_upper_limit 
+		colision_y_bot_to_up = my_upper_limit <= your_bottom_limit and \
+								my_upper_limit >= your_upper_limit 
 
-		colision_x_left_to_right = my_right_limit > your_left_limit and \
-									my_right_limit < your_right_limit 
+		colision_x_left_to_right = my_right_limit >= your_left_limit and \
+									my_right_limit <= your_right_limit 
 
-		colision_x_right_to_left = my_left_limit < your_right_limit and \
-									my_left_limit > your_left_limit 
+		colision_x_right_to_left = my_left_limit <= your_right_limit and \
+									my_left_limit >= your_left_limit 
 
 		colision_condition = (colision_x_left_to_right or colision_x_right_to_left) and \
 								(colision_y_up_to_bot or colision_y_bot_to_up)

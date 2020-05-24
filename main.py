@@ -14,10 +14,13 @@ MAX_POPULATION = 200
 GAME_MODE = 0
 MACHINE_LEARNING_MODE = 1
 HUMAN_MODE = 2
+FPS = 60
+
 
 pygame.init()
 window = pygame.display.set_mode((WIDTH+WIDTH_PANEL,HEIGHT))
 pygame.display.set_caption("Navigate")
+fpsClock = pygame.time.Clock()
 
 BACKGROUND_COLOR = (255,255,255)
 g_file_name = "backup.csv"
@@ -117,7 +120,6 @@ def convert_string_to_array(pixels):
 # 6. vuelve al paso 2 hasta acabar el numero de generaciones
 
 def main():
-	
 	player = entities.Player(WIDTH/2, HEIGHT/2, WIDTH, HEIGHT, window)
 	target = entities.Player(15, HEIGHT-15, WIDTH, HEIGHT, window)
 	target.Change_color((255,0,0))
@@ -128,48 +130,46 @@ def main():
 	# habilita la repetición de teclas
 	pygame.key.set_repeat(delay, interval)
 
+	actual_generation = 0
+
 	players_array = make_population()
 	GAME_MODE = MACHINE_LEARNING_MODE
 
 	ag = AG.AG(MAX_POPULATION)
 
+	#se recupeara la red nueronal anteriormente guardada y se inserta
+	#en un jugador individual para corroborar su rendimiento.
 	backup_nn = pd.read_csv(g_file_name)
 	best_nn = convert_string_to_array(backup_nn['cromosomas'][0])
 	print(best_nn)
-
 	player.Set_new_brain(best_nn)
-
 
 	while(True):
 
 		background()
 
-		text("Generación: ", WIDTH + 10, 50)
-		text("Población: ", WIDTH + 10, 70)
-		text("Error: ", WIDTH + 10, 90)
+		actual_generation = ag.get_generation()
 
+		text("Generación: {}".format(actual_generation), WIDTH + 10, 50)
+		text("Población: {}".format(MAX_POPULATION), WIDTH + 10, 70)
+		text("Error: ", WIDTH + 10, 90)
 		target.Display()
-		
-		#player.Brain(target.Get_cordinates())
+
 		if(GAME_MODE == MACHINE_LEARNING_MODE):
-			
+			#actualizar las posiciones y la visualizacion de los jugadores.
 			generation_finish_flag = generation_duty(players_array, target)
 
 			if(generation_finish_flag):
 				#ordenar el arreglo
 				sorted_array = generation_sort(players_array)
+				#crear la nueva generacion
 				new_generation_array = ag.new_generation(sorted_array)
-				print("--------------------------------")
-				print(sorted_array[0]['fit'])
-				print(sorted_array[1]['fit'])
-				print(sorted_array[2]['fit'])
-				print(sorted_array[3]['fit'])
-				#print(new_generation_array)
-				#print(new_generation_array)
-				print("--------------------------------")
+				#reescribir los datos en los jugadores
 				generation_rewrite_brain(players_array, new_generation_array)
+				#resetar las posiciones
 				generation_reset(players_array)
 				generation_finish_flag = False
+				#cambiar el lugar del objetivo
 				target.position.set(np.random.randint(WIDTH), np.random.randint(HEIGHT))
 				pass
 
@@ -183,6 +183,8 @@ def main():
 			if(success or finish):
 				print(player.Get_fitness())
 				player.Reset()
+				#Cambiamos la posición del objetivo para asegurarnos que la red aprendio para 
+				#cualquier posición y no esta sesgada.
 				target.position.set(np.random.randint(WIDTH), np.random.randint(HEIGHT))
 			else:
 				player.Brain(target.Get_values())
@@ -210,7 +212,8 @@ def main():
 					neuronal_network_backup(sorted_array[0:10])
 
 		pygame.display.update()
-		time.sleep(0.025)
+		fpsClock.tick(FPS)
+		#time.sleep(0.025)
 
 if(__name__ == '__main__'):
 	main()
