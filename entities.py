@@ -91,6 +91,18 @@ class PVector(object):
 		self.div(magnitude)
 
 	def limit(self, lim):
+		"""
+		En caso de superar el limite el vector se iguala al limite meximo establecido.
+		Este metodo se tiene que llamar cada vez que se quiera limitar el vector.
+
+		Parametros
+		----------
+		lim: limite en magnitud al cual el vector puee llegar.
+
+		Retorna
+		-----------
+		N/A
+		"""
 		magnitude = self.mag()
 		if(magnitude > lim):
 			self.normalize()
@@ -114,16 +126,16 @@ class Entity(object):
 		self.velocity.limit(self.velocity_limit)
 		self.position.add(self.velocity)
 	def Up_limit(self):
-		self.velocity.multiplication(0)
+		self.velocity.y *= -1
 		self.position.y = 0
 	def Down_limit(self):
-		self.velocity.multiplication(0)
+		self.velocity.y *= -1
 		self.position.y = self.screen_dimensions['height'] - self.height
 	def Left_limit(self):
-		self.velocity.multiplication(0)
+		self.velocity.x *= -1
 		self.position.x = 0
 	def Right_limit(self):
-		self.velocity.multiplication(0)
+		self.velocity.x *= -1
 		self.position.x = self.screen_dimensions['width'] - self.width
 	def CheckEdge(self):
 		max_y = self.screen_dimensions['height']
@@ -180,11 +192,8 @@ class Player(Entity):
 		self.height = self.radius
 		self.thickness = 1
 		self.scale = 1
-		velocity_limit = 20
-		self.velocity.limit(velocity_limit)
-		self.acceleration_value = velocity_limit/2
-		self.aceleration_vector = PVector(0,0)
-		self.acceleration.limit(velocity_limit)
+		velocity_limit = 15
+		self.velocity_limit = 20
 
 		inputs = 2
 		hidden = 4
@@ -193,12 +202,14 @@ class Player(Entity):
 		self.nn = ann.neuronal_network(inputs,hidden,outputs)
 
 		self.steps = 0
-		self.max_steps = 50
+		self.max_steps = 100
 		self.fitness = 0
 		self.distance_error_amount = 0
 
 		self.Change_color((0,np.random.randint(255),np.random.randint(255)))
 
+		self.mass = 5
+		self.force_vector = PVector(1,1)
 	def Fitness(self, target):
 		"""
 		Calcula la distancia entre el objetivo y este objeto y almacena
@@ -231,7 +242,6 @@ class Player(Entity):
 			#parche que pronto quitare
 			self.steps = 1
 		return self.distance_error_amount/self.steps
-
 	def Brain(self, pos):
 
 		x = (pos[0] - self.position.x) / self.screen_dimensions['width']
@@ -285,30 +295,30 @@ class Player(Entity):
 		"""
 		self.scale = scale
 	def Up_key_pressed(self):
-		self.aceleration_vector.set(0,-self.acceleration_value)
-		self.acceleration.add(self.aceleration_vector)
+		self.force_vector.set(0,-10)
+		self.Apply_force(self.force_vector)
 		self.steps += 1
 		pass
 	def Down_key_pressed(self):
-		self.aceleration_vector.set(0,self.acceleration_value)
-		self.acceleration.add(self.aceleration_vector)
+		self.force_vector.set(0,10)
+		self.Apply_force(self.force_vector)
 		self.steps += 1
 		pass
 	def Right_key_pressed(self):
-		self.aceleration_vector.set(self.acceleration_value,0)
-		self.acceleration.add(self.aceleration_vector)
+		self.force_vector.set(10,0)
+		self.Apply_force(self.force_vector)
 		self.steps += 1
 		pass
 	def Left_key_pressed(self):
-		self.aceleration_vector.set(-self.acceleration_value,0)
-		self.acceleration.add(self.aceleration_vector)
+		self.force_vector.set(-10,0)
+		self.Apply_force(self.force_vector)
 		self.steps += 1
 		pass
 	def Move(self):
 		self.CheckEdge()
+		self.Friction_force()
 		self.Update()
 		self.acceleration.set(0,0)
-		self.velocity.set(0,0)
 	def Get_cordinates(self):
 		x = self.position.x
 		y = self.position.y
@@ -379,3 +389,22 @@ class Player(Entity):
 		return self.nn.get_weights_and_bias()
 	def Set_new_brain(self,buff):
 		self.nn.set_weights_and_bias(buff)
+	def Apply_force(self, force_vector):
+		# f = ma -> a = f/m
+		#print("force_vector: {}, {}".format(force_vector.x, force_vector.y))
+		aceleration_vector = force_vector
+		aceleration_vector.div(self.mass)
+		self.acceleration.add(aceleration_vector)
+	def Friction_force(self):
+		#coenficiente de friccion
+		c = 0.5
+		normal = 1
+		friction_mag = c * normal
+		velocity_mag = self.velocity.mag()
+		if(velocity_mag > 0):
+			friction_vector = PVector(self.velocity.x,self.velocity.y)
+			friction_vector.multiplication(-1)
+			friction_vector.normalize()			
+			friction_vector.multiplication(friction_mag)
+			friction_vector.limit(velocity_mag)
+			self.Apply_force(friction_vector)

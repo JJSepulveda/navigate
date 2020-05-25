@@ -133,7 +133,7 @@ def main():
 	actual_generation = 0
 
 	players_array = make_population()
-	GAME_MODE = MACHINE_LEARNING_MODE
+	GAME_MODE = HUMAN_MODE
 
 	ag = AG.AG(MAX_POPULATION)
 
@@ -172,7 +172,6 @@ def main():
 				#cambiar el lugar del objetivo
 				target.position.set(np.random.randint(WIDTH), np.random.randint(HEIGHT))
 				pass
-
 
 		elif(GAME_MODE == HUMAN_MODE):
 			
